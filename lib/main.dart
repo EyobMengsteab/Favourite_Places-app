@@ -10,20 +10,27 @@ final colorScheme = ColorScheme.fromSeed(
   background: const Color.fromARGB(255, 56, 49, 66),
 );
 
-final theme = ThemeData(
+final theme = ThemeData().copyWith(
   useMaterial3: true,
   scaffoldBackgroundColor: colorScheme.background,
   colorScheme: colorScheme,
-  textTheme: GoogleFonts.ubuntuCondensedTextTheme(ThemeData.dark().textTheme)
-      .copyWith(
-        titleSmall: GoogleFonts.ubuntuCondensed(fontWeight: FontWeight.bold),
-        titleMedium: GoogleFonts.ubuntuCondensed(fontWeight: FontWeight.bold),
-        titleLarge: GoogleFonts.ubuntuCondensed(fontWeight: FontWeight.bold),
-      ),
+  textTheme: GoogleFonts.ubuntuCondensedTextTheme().copyWith(
+    titleSmall: GoogleFonts.ubuntuCondensed(
+      fontWeight: FontWeight.bold,
+    ),
+    titleMedium: GoogleFonts.ubuntuCondensed(
+      fontWeight: FontWeight.bold,
+    ),
+    titleLarge: GoogleFonts.ubuntuCondensed(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
 );
 
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    const ProviderScope(child: MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
