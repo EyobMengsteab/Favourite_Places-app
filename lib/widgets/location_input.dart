@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -29,26 +30,44 @@ class _LocationInputState extends State<LocationInput> {
     }
     final lat = _pickedLocation!.latitude;
     final lng = _pickedLocation!.longitude;
-    return 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng=&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7Clabel:A%7C$lat,$lng&key=AIzaSyDLcwxUggpPZo8lcbH0TB4Crq5SJjtj4ag';
+    // Note: If billing is inactive, Google might return a broken image or a watermarked placeholder here.
+    return 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng=&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7Clabel:A%7C$lat,$lng&key=YOUR_API_KEY_HERE';
   }
 
   Future<void> _savePlace(double latitude, double longitude) async {
     final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=AIzaSyDLcwxUggpPZo8lcbH0TB4Crq5SJjtj4ag');
-    final response = await http.get(url);
-    final resData = json.decode(response.body);
-    final address = resData['results'][0]['formatted_address'];
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=YOUR_API_KEY_HERE');
 
-    setState(() {
-      _pickedLocation = PlaceLocation(
-        latitude: latitude,
-        longitude: longitude,
-        address: address,
-      );
-      _isGettingLocation = false;
-    });
+    try {
+      final response = await http.get(url);
+      final resData = json.decode(response.body);
+      final address = resData['results'][0]['formatted_address'];
 
-    widget.onSelectLocation(_pickedLocation!);
+      setState(() {
+        _pickedLocation = PlaceLocation(
+          latitude: latitude,
+          longitude: longitude,
+          address: address,
+        );
+        _isGettingLocation = false;
+      });
+
+      widget.onSelectLocation(_pickedLocation!);
+
+    } catch (error) {
+      // FALLBACK LOGIC IF GOOGLE API FAILS
+      setState(() {
+        _pickedLocation = PlaceLocation(
+          latitude: latitude,
+          longitude: longitude,
+          address: 'Offline Location (Lat: $latitude, Lng: $longitude)',
+        );
+        _isGettingLocation = false;
+      });
+
+      // Tells the AddPlaceScreen that a location was successfully picked
+      widget.onSelectLocation(_pickedLocation!);
+    }
   }
 
   void _getCurrentLocation() async {
@@ -83,6 +102,9 @@ class _LocationInputState extends State<LocationInput> {
     final lng = locationData.longitude;
 
     if (lat == null || lng == null) {
+      setState(() {
+        _isGettingLocation = false;
+      });
       return;
     }
 
@@ -99,6 +121,11 @@ class _LocationInputState extends State<LocationInput> {
     if (pickedLocation == null) {
       return;
     }
+
+    // Sets spinner to true so the user knows it's processing the map selection
+    setState(() {
+      _isGettingLocation = true;
+    });
 
     _savePlace(pickedLocation.latitude, pickedLocation.longitude);
   }
@@ -119,6 +146,18 @@ class _LocationInputState extends State<LocationInput> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        // If the static map image fails to load due to billing, show a fallback icon
+        errorBuilder: (context, error, stackTrace) => Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, size: 40, color: Colors.grey),
+            const SizedBox(height: 8),
+            Text(
+              'Map Preview Unavailable',
+              style: TextStyle(color: Theme.of(context).colorScheme.onBackground),
+            )
+          ],
+        ),
       );
     }
 
